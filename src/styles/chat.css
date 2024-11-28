@@ -1,0 +1,35 @@
+@layer components {
+  .message-content {
+    @apply space-y-4;
+  }
+
+  .message-content p {
+    @apply leading-relaxed;
+  }
+
+  .message-content pre {
+    @apply font-mono text-sm;
+  }
+
+  .message-content code {
+    @apply font-mono text-sm;
+  }
+
+  .message-content a {
+    @apply break-all;
+  }
+
+  .message-content ul,
+  .message-content ol {
+    @apply space-y-2 mr-6;
+  }
+
+  .message-content li {
+    @apply relative;
+  }
+
+  .message-content li::before {
+    @apply absolute right-[-1.5rem] top-2 w-1 h-1 bg-orange-500 rounded-full;
+    content: '';
+  }
+}

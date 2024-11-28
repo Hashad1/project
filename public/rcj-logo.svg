@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="500" height="500" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle -->
+  <circle cx="250" cy="250" r="240" fill="#800000"/>
+  <circle cx="250" cy="250" r="220" fill="url(#skyGradient)"/>
+  
+  <!-- Inner maroon section -->
+  <path d="M80 250C80 148.5 162.5 66 264 66c101.5 0 184 82.5 184 184s-82.5 184-184 184C162.5 434 80 351.5 80 250z" fill="#800000"/>
+  
+  <!-- Skyline -->
+  <g transform="translate(120, 200)" fill="#FFFFFF">
+    <!-- Buildings -->
+    <path d="M20 120h40v80H20z M80 100h30v100H80z M130 80h25v120h-25z M180 60h20v140h-20z M220 90h25v110h-25z M260 70h30v130h-30z"/>
+    
+    <!-- Palm tree -->
+    <path d="M150 140h10v60h-10z"/>
+    <path d="M135 140c0 0 20-25 40 0c-15-8-10 5-40 0z"/>
+    
+    <!-- Saudi emblem -->
+    <path d="M155 160l15-20h-30z"/>
+  </g>
+  
+  <!-- Text paths -->
+  <path id="upperArcPath" d="M50,100 A200,200 0 0,1 450,100" fill="none"/>
+  <path id="lowerArcPath" d="M50,400 A200,200 0 0,0 450,400" fill="none"/>
+  
+  <!-- Text -->
+  <text fill="#FFFFFF" font-size="24" font-family="Noto Sans Arabic, Arial">
+    <textPath href="#upperArcPath" startOffset="50%" text-anchor="middle">المملكة العربية السعودية</textPath>
+  </text>
+  <text fill="#FFFFFF" font-size="24" font-family="Arial">
+    <textPath href="#lowerArcPath" startOffset="50%" text-anchor="middle">KINGDOM OF SAUDI ARABIA</textPath>
+  </text>
+</svg>
