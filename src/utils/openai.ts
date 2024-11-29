@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 const ASSISTANT_ID = 'asst_CJpNbyOYJHH3HNHfqWm0xX3U';
-const API_KEY = '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';
+const API_KEY = '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';
 
 const openai = new OpenAI({
   apiKey: API_KEY,
