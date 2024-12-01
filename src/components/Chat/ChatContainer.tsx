@@ -1,18 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { ChatMessage } from './ChatMessage';
+import { ChatProps } from '../../types/chat';
 
-interface Message {
-  id: string;
-  text: string;
-  isBot: boolean;
-}
-
-interface ChatContainerProps {
-  messages: Message[];
-  isStreaming: boolean;
-}
-
-export function ChatContainer({ messages, isStreaming }: ChatContainerProps) {
+export function ChatContainer({ messages, isStreaming }: ChatProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
