@@ -1,5 +1,7 @@
-import { createWorker } from 'tesseract.js';
+import { createWorker, Worker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import { translations } from './translations';
+import { TextItem, TextMarkedContent } from 'pdfjs-dist/types/src/display/api';
 
 // Initialize PDF.js worker
 const pdfWorkerSrc = new URL(
@@ -10,13 +12,18 @@ const pdfWorkerSrc = new URL(
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
 // Create a singleton worker instance
-let tesseractWorker: Awaited<ReturnType<typeof createWorker>> | null = null;
+let tesseractWorker: Worker | null = null;
 
 async function initTesseractWorker() {
   if (!tesseractWorker) {
-    tesseractWorker = await createWorker();
+    const workerOptions: WorkerOptions = {
+      logger: (progress: any) => {
+        console.log('OCR Progress:', progress);
+      }
+    };
+    tesseractWorker = await createWorker(workerOptions);
     await tesseractWorker.loadLanguage('ara+eng');
-    await tesseractWorker.initialize('ara+eng');
+    await tesseractWorker.reinitialize('ara+eng');
   }
   return tesseractWorker;
 }
@@ -24,24 +31,23 @@ async function initTesseractWorker() {
 export async function processFile(file: File): Promise<string> {
   try {
     if (!file) {
-      throw new Error('لم يتم اختيار ملف');
+      throw new Error(translations.fileTypeError);
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      throw new Error('حجم الملف كبير جداً. الحد الأقصى هو 10 ميجابايت');
+      throw new Error(translations.fileSizeError);
     }
 
     const content = await extractContent(file);
     return content;
   } catch (error) {
     console.error('Error processing file:', error);
-    throw error instanceof Error ? error : new Error('فشل في معالجة الملف');
+    throw error instanceof Error ? error : new Error(translations.fileProcessingError);
   }
 }
 
 async function extractContent(file: File): Promise<string> {
   const supportedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  const supportedDocTypes = ['application/pdf', 'text/plain'];
 
   if (supportedImageTypes.includes(file.type)) {
     return await processImage(file);
@@ -49,31 +55,29 @@ async function extractContent(file: File): Promise<string> {
     return await processPDF(file);
   } else if (file.type === 'text/plain') {
     return await processText(file);
+  } else {
+    throw new Error(translations.fileTypeError);
   }
-  
-  throw new Error('نوع الملف غير مدعوم. الأنواع المدعومة هي: PDF، صور (JPG, PNG)، ومستندات نصية');
 }
 
 async function processImage(file: File): Promise<string> {
   try {
     const worker = await initTesseractWorker();
-    const imageUrl = URL.createObjectURL(file);
-    
-    const { data: { text } } = await worker.recognize(imageUrl);
-    URL.revokeObjectURL(imageUrl);
-    
-    if (!text || text.trim().length === 0) {
-      throw new Error('لم يتم العثور على نص قابل للقراءة في الصورة');
+    if (!worker) {
+      throw new Error('OCR worker initialization failed');
     }
 
-    return `محتوى النص المستخرج من الصورة:\n\n${text}`;
+    const result = await worker.recognize(file);
+    const text = result.data.text;
+
+    if (!text || text.trim().length === 0) {
+      throw new Error(translations.noTextFound);
+    }
+
+    return text.trim();
   } catch (error) {
     console.error('Error processing image:', error);
-    if (tesseractWorker) {
-      await tesseractWorker.terminate();
-      tesseractWorker = null;
-    }
-    throw error instanceof Error ? error : new Error('فشل في معالجة الصورة');
+    throw error instanceof Error ? error : new Error(translations.fileProcessingError);
   }
 }
 
@@ -88,51 +92,38 @@ async function processPDF(file: File): Promise<string> {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const pageText = textContent.items
-        .map((item: any) => item.str)
+        .map((item: TextItem | TextMarkedContent) => {
+          if ('str' in item) {
+            return item.str;
+          }
+          return '';
+        })
         .join(' ');
       fullText += pageText + '\n\n';
     }
 
     if (!fullText || fullText.trim().length === 0) {
-      throw new Error('لم يتم العثور على نص في ملف PDF');
+      throw new Error(translations.noTextFound);
     }
 
-    return `محتوى ملف PDF:\n\n${fullText.trim()}`;
+    return fullText.trim();
   } catch (error) {
     console.error('Error processing PDF:', error);
-    if (error instanceof Error) {
-      if (error.message.includes('Invalid PDF structure')) {
-        throw new Error('ملف PDF تالف أو غير صالح');
-      } else if (error.message.includes('Encrypted PDF')) {
-        throw new Error('لا يمكن قراءة ملف PDF المحمي');
-      }
-    }
-    throw new Error('فشل في قراءة ملف PDF');
+    throw error instanceof Error ? error : new Error(translations.fileProcessingError);
   }
 }
 
 async function processText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result;
-        if (typeof content !== 'string' || content.trim().length === 0) {
-          throw new Error('الملف فارغ أو غير صالح');
-        }
-        resolve(`محتوى الملف النصي:\n\n${content}`);
-      } catch (error) {
-        reject(error instanceof Error ? error : new Error('فشل في معالجة محتوى الملف'));
-      }
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('فشل في قراءة الملف'));
-    };
-
-    reader.readAsText(file);
-  });
+  try {
+    const text = await file.text();
+    if (!text || text.trim().length === 0) {
+      throw new Error(translations.noTextFound);
+    }
+    return text.trim();
+  } catch (error) {
+    console.error('Error processing text file:', error);
+    throw error instanceof Error ? error : new Error(translations.fileProcessingError);
+  }
 }
 
 export async function cleanupTesseract() {

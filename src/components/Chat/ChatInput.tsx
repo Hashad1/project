@@ -1,67 +1,117 @@
-import React, { useState } from 'react';
-import { Mic, ArrowUp } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Mic, FileUp } from 'lucide-react';
 import { translations } from '../../utils/translations';
-import { FileUpload } from './FileUpload';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onStartVoice: () => void;
+  onStopVoice: () => void;
+  onFileSelect: (file: File) => void;
   isListening: boolean;
+  isProcessing: boolean;
 }
 
-export function ChatInput({ onSendMessage, onStartVoice, isListening }: ChatInputProps) {
+export function ChatInput({ 
+  onSendMessage, 
+  onStartVoice, 
+  onStopVoice,
+  onFileSelect,
+  isListening,
+  isProcessing 
+}: ChatInputProps) {
   const [message, setMessage] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [message]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim()) {
-      onSendMessage(message);
+    if (message.trim() && !isProcessing) {
+      onSendMessage(message.trim());
       setMessage('');
     }
   };
 
-  const handleFileSelect = (file: File) => {
-    onSendMessage(`${translations.fileUploaded}: ${file.name}`);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFileSelect(file);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-100 p-6 bg-white">
-      <div className="flex gap-3 items-center">
+    <div className="border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
+        <div className="relative flex-1">
+          <textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={translations.placeholder}
+            rows={1}
+            disabled={isListening || isProcessing}
+            dir="rtl"
+            className="w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-base text-gray-700 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:focus:border-orange-400 dark:focus:ring-orange-400"
+          />
+        </div>
+        
         <div className="flex gap-2">
           <button
-            type="submit"
-            disabled={!message.trim()}
-            className={`rounded-xl p-3 transition-all duration-200 ${
-              message.trim()
-                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200 hover:shadow-orange-300'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-            aria-label={translations.send}
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessing}
+            className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+            title={translations.uploadFile}
           >
-            <ArrowUp size={20} />
+            <FileUp size={20} />
           </button>
+          
           <button
             type="button"
-            onClick={onStartVoice}
-            className={`rounded-xl p-3 transition-all duration-200 ${
+            onClick={isListening ? onStopVoice : onStartVoice}
+            disabled={isProcessing}
+            className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
               isListening
-                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-200'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             }`}
+            title={isListening ? translations.stopRecording : translations.startRecording}
           >
             <Mic size={20} />
           </button>
-          <FileUpload onFileSelect={handleFileSelect} />
+          
+          <button
+            type="submit"
+            disabled={!message.trim() || isProcessing}
+            className="p-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 transition-colors disabled:opacity-50"
+            title={translations.send}
+          >
+            <Send size={20} />
+          </button>
         </div>
+        
         <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder={translations.placeholder}
-          className="flex-1 px-6 py-3 bg-gray-50 rounded-2xl border-0 focus:ring-2 focus:ring-orange-500 text-right placeholder:text-gray-400"
-          dir="rtl"
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileChange}
+          className="hidden"
+          accept=".pdf,.doc,.docx,.txt,image/*"
         />
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

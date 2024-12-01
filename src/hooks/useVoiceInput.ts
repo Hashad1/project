@@ -1,115 +1,95 @@
 import { useState, useCallback, useRef } from 'react';
 import { translations } from '../utils/translations';
 
-export function useVoiceInput(
-  onResult: (transcript: string) => void,
-  onStartListening: () => void
-) {
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  maxAlternatives: number;
+  start(): void;
+  stop(): void;
+  onstart: () => void;
+  onend: () => void;
+  onerror: (event: { error: string }) => void;
+  onresult: (event: {
+    resultIndex: number;
+    results: {
+      [index: number]: {
+        isFinal: boolean;
+        [index: number]: {
+          transcript: string;
+        };
+      };
+    };
+  }) => void;
+}
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+export function useVoiceInput(onResult: (transcript: string) => void, stopAudio: () => void) {
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const finalTranscriptRef = useRef<string>('');
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const stopRecognition = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
-    }
-    setIsListening(false);
-    finalTranscriptRef.current = '';
-  }, []);
-
-  const resetSilenceTimeout = useCallback(() => {
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-    }
-    // Increased silence timeout to 3 seconds
-    silenceTimeoutRef.current = setTimeout(() => {
-      if (finalTranscriptRef.current.trim()) {
-        onResult(finalTranscriptRef.current.trim());
-      }
-      stopRecognition();
-    }, 3000);
-  }, [onResult, stopRecognition]);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const startListening = useCallback(() => {
     if (!('webkitSpeechRecognition' in window)) {
-      alert(translations.speechNotSupported);
+      alert(translations.browserNotSupported);
       return;
     }
 
-    // If already listening, stop the recognition
-    if (isListening) {
-      stopRecognition();
-      return;
+    stopAudio();
+
+    if (!recognitionRef.current) {
+      recognitionRef.current = new window.webkitSpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'ar-SA';
+      recognitionRef.current.maxAlternatives = 1;
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[event.resultIndex][0].transcript;
+        onResult(transcript);
+      };
     }
-
-    // Stop any playing audio before starting to listen
-    onStartListening();
-
-    const recognition = new (window as any).webkitSpeechRecognition();
-    recognitionRef.current = recognition;
-
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = 'ar-SA';
-    recognition.maxAlternatives = 1;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      finalTranscriptRef.current = '';
-      resetSilenceTimeout();
-    };
-
-    recognition.onresult = (event: any) => {
-      let interimTranscript = '';
-      let finalTranscript = '';
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-        } else {
-          interimTranscript += transcript;
-        }
-      }
-
-      if (finalTranscript) {
-        finalTranscriptRef.current += finalTranscript;
-        resetSilenceTimeout();
-      }
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      stopRecognition();
-    };
-
-    recognition.onend = () => {
-      if (isListening && !finalTranscriptRef.current.trim()) {
-        // Only restart if we're still supposed to be listening and no final transcript
-        try {
-          recognition.start();
-        } catch (error) {
-          console.error('Error restarting speech recognition:', error);
-          stopRecognition();
-        }
-      } else {
-        stopRecognition();
-      }
-    };
 
     try {
-      recognition.start();
+      recognitionRef.current.start();
     } catch (error) {
       console.error('Error starting speech recognition:', error);
-      stopRecognition();
+      setIsListening(false);
     }
-  }, [isListening, resetSilenceTimeout, stopRecognition, onStartListening]);
+  }, [onResult, stopAudio]);
 
-  return { isListening, startListening };
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping speech recognition:', error);
+      }
+    }
+    setIsListening(false);
+  }, []);
+
+  return {
+    isListening,
+    startListening,
+    stopListening
+  };
 }

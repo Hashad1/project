@@ -17,7 +17,7 @@ export function formatMessage(message: string): string {
 
   // Convert bullet points
   formattedMessage = formattedMessage.replace(
-    /^[•\-\*]\s(.+)$/gm,
+    /^[•*-]\s(.+)$/gm,
     '<div class="flex gap-2 items-start"><span class="text-orange-500 mt-1.5">•</span><span>$1</span></div>'
   );
 

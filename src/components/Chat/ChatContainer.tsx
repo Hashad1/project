@@ -1,39 +1,39 @@
-import React, { useEffect, useRef } from 'react';
+import { useRef, useEffect } from 'react';
+import { Message } from '../../types/chat';
 import { ChatMessage } from './ChatMessage';
-import { ChatProps } from '../../types/chat';
 
-export function ChatContainer({ messages, isStreaming }: ChatProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+interface ChatContainerProps {
+  messages: Message[];
+  isStreaming: boolean;
+}
+
+export function ChatContainer({ messages, isStreaming }: ChatContainerProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (containerRef.current) {
-      const { scrollHeight, clientHeight } = containerRef.current;
-      const maxScroll = scrollHeight - clientHeight;
-      
-      // Smooth scroll to bottom
-      containerRef.current.scrollTo({
-        top: maxScroll,
-        behavior: 'smooth'
-      });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isStreaming]); // Re-run when messages or streaming state changes
+  }, [messages]);
 
   return (
-    <div 
-      ref={containerRef}
-      className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth" 
-      style={{ height: 'calc(100vh - 280px)' }}
-    >
-      <div className="divide-y divide-gray-100 dark:divide-gray-700">
-        {messages.map((message) => (
+    <div className="h-full overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
+      {messages.length === 0 ? (
+        <div className="flex h-full items-center justify-center">
+          <p className="text-gray-500 dark:text-gray-400">
+            مرحباً! كيف يمكنني مساعدتك اليوم؟
+          </p>
+        </div>
+      ) : (
+        messages.map((message) => (
           <ChatMessage
             key={message.id}
-            message={message.text}
-            isBot={message.isBot}
-            isStreaming={isStreaming && message.id === messages[messages.length - 1].id && message.isBot}
+            message={message}
+            isStreaming={isStreaming && message.id === messages[messages.length - 1]?.id}
           />
-        ))}
-      </div>
+        ))
+      )}
+      <div ref={messagesEndRef} />
     </div>
   );
 }

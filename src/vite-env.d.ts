@@ -1,5 +1,10 @@
 /// <reference types="vite/client" />
 
-interface Window {
-  webkitSpeechRecognition: any;
+interface ImportMetaEnv {
+  readonly VITE_OPENAI_API_KEY: string
+  readonly VITE_OPENAI_ASSISTANT_ID: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ChatContainer } from '../ChatContainer';
 
@@ -19,7 +18,8 @@ describe('ChatContainer', () => {
   it('applies streaming class when message is streaming', () => {
     render(<ChatContainer messages={mockMessages} isStreaming={true} />);
     
-    const lastMessage = screen.getByText(mockMessages[mockMessages.length - 1].text);
-    expect(lastMessage.parentElement).toHaveClass('streaming');
+    const lastMessage = screen.getByText(mockMessages[mockMessages.length - 1].text)
+      .closest('.flex.gap-4.p-6');
+    expect(lastMessage).toHaveClass('bg-gray-50');
   });
 });

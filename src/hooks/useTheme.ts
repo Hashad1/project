@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 
 export function useTheme() {
   const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
 
   useEffect(() => {
@@ -16,5 +16,7 @@ export function useTheme() {
     }
   }, [isDark]);
 
-  return { isDark, toggleTheme: () => setIsDark(!isDark) };
+  const toggleTheme = () => setIsDark(!isDark);
+
+  return { isDark, toggleTheme };
 }

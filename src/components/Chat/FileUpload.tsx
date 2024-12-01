@@ -50,19 +50,22 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
         type="button"
         onClick={handleClick}
         disabled={isProcessing}
-        className={`rounded-xl p-3 transition-all duration-200 ${
+        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
           isProcessing
-            ? 'bg-gray-200 cursor-not-allowed'
-            : error
-            ? 'bg-red-100 text-red-600 hover:bg-red-200'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-        }`}
-        title={error || translations.uploadFile}
+            ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+            : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
+        } text-gray-700 dark:text-gray-200`}
       >
         {isProcessing ? (
-          <Loader2 size={20} className="animate-spin" />
+          <>
+            <Loader2 className="w-5 h-5 animate-spin inline-block ml-1" />
+            <span>{translations.processingFile}</span>
+          </>
         ) : (
-          <FileUp size={20} />
+          <>
+            <FileUp className="w-5 h-5 inline-block ml-1" />
+            <span>{translations.uploadFile}</span>
+          </>
         )}
       </button>
       <input
@@ -70,11 +73,10 @@ export function FileUpload({ onFileSelect }: FileUploadProps) {
         type="file"
         className="hidden"
         onChange={handleFileChange}
-        accept=".pdf,.txt,.jpg,.jpeg,.png,.gif,.webp"
-        disabled={isProcessing}
+        accept=".pdf,.txt,.doc,.docx,image/*"
       />
       {error && (
-        <div className="absolute bottom-full mb-2 right-0 w-64 p-2 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+        <div className="absolute top-full mt-2 right-0 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 text-sm rounded-lg p-2 z-10">
           {error}
         </div>
       )}
