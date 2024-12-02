@@ -42,7 +42,6 @@ export async function sendMessage(threadId: string, message: string) {
   }
 }
 
-
 export async function streamResponse(threadId: string, runId: string, onChunk: (chunk: string) => void) {
   let run;
   let attempts = 0;
@@ -66,6 +65,7 @@ export async function streamResponse(threadId: string, runId: string, onChunk: (
       if (latestMessage.content[0].type === 'text') {
         const text = latestMessage.content[0].text.value;
         onChunk(text);
+        await generateSpeech(text);
       }
       break;
     }
@@ -73,4 +73,26 @@ export async function streamResponse(threadId: string, runId: string, onChunk: (
     await new Promise(resolve => setTimeout(resolve, 1000));
     attempts++;
   } while (true);
+}
+
+export async function generateSpeech(text: string) {
+  try {
+    const mp3 = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "alloy",
+      input: text,
+    });
+
+    const blob = new Blob([await mp3.arrayBuffer()], { type: 'audio/mpeg' });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play();
+
+    // Clean up the URL when done
+    audio.addEventListener('ended', () => {
+      URL.revokeObjectURL(url);
+    });
+  } catch (error) {
+    console.error('Error generating speech:', error);
+  }
 }

@@ -36,7 +36,7 @@ export function useVoiceInput(onResult: (transcript: string) => void, stopAudio:
 
   const startListening = useCallback(() => {
     if (!('webkitSpeechRecognition' in window)) {
-      alert(translations.browserNotSupported);
+      alert(translations.speechNotSupported);
       return;
     }
 
@@ -44,16 +44,18 @@ export function useVoiceInput(onResult: (transcript: string) => void, stopAudio:
 
     if (!recognitionRef.current) {
       recognitionRef.current = new window.webkitSpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'ar-SA';
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'ar-SA'; // Arabic (Saudi Arabia)
       recognitionRef.current.maxAlternatives = 1;
 
       recognitionRef.current.onstart = () => {
+        console.log('Voice recognition started');
         setIsListening(true);
       };
 
       recognitionRef.current.onend = () => {
+        console.log('Voice recognition ended');
         setIsListening(false);
       };
 
@@ -63,8 +65,13 @@ export function useVoiceInput(onResult: (transcript: string) => void, stopAudio:
       };
 
       recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[event.resultIndex][0].transcript;
-        onResult(transcript);
+        const lastResult = event.results[event.results.length - 1];
+        const transcript = lastResult[0].transcript;
+        console.log('Recognized text:', transcript);
+        
+        if (lastResult.isFinal) {
+          onResult(transcript);
+        }
       };
     }
 
