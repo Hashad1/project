@@ -1,11 +1,16 @@
 import OpenAI from 'openai';
 
+<<<<<<< HEAD
 const ASSISTANT_ID = import.meta.env.VITE_OPENAI_ASSISTANT_ID || 'asst_CJpNbyOYJHH3HNHfqWm0xX3U';
 const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 if (!API_KEY) {
   console.error('OpenAI API key is not set. Please set VITE_OPENAI_API_KEY environment variable.');
 }
+=======
+const ASSISTANT_ID = 'asst_CJpNbyOYJHH3HNHfqWm0xX3U';
+const API_KEY = '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';
+>>>>>>> beaa3022244824d7ff68c3273231ad1cfa470088
 
 const openai = new OpenAI({
   apiKey: API_KEY,
@@ -74,6 +79,7 @@ export async function streamResponse(threadId: string, runId: string, onChunk: (
     attempts++;
   } while (true);
 }
+<<<<<<< HEAD
 
 export async function generateSpeech(text: string) {
   try {
@@ -96,3 +102,5 @@ export async function generateSpeech(text: string) {
     console.error('Error generating speech:', error);
   }
 }
+=======
+>>>>>>> beaa3022244824d7ff68c3273231ad1cfa470088
